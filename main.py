@@ -37,7 +37,7 @@ def clean_image_urls(text: str) -> str:
 
 try:
     # === Build & Visit URL ===
-    query = "gym equipment"  # or loop through multiple queries
+    query = "organic honey"  # or loop through multiple queries
     url = (
         f"https://www.facebook.com/ads/library/"
         f"?active_status=active"
@@ -87,12 +87,20 @@ try:
         f.write(fullText)
     
     process_text_data(fullText, query)
-    all_ads_json = open("extracted_ads.json","r")
-    df = pd.read_json(all_ads_json)
-    with open('extracted_ads.json', 'r') as f:
-        data = json.load(f)
-    df = pd.json_normalize(data)
-    df.to_csv('extracted_ads.csv', index=False)
+    with open("extracted_ads.json", "r") as data:
+        json_data = json.load(data)
+        selected_fields = ['advertiser', 'advertiser_facebook_link', 'advertiser_website_link', 'contact', 'library_id']
+
+        # Create DataFrame and rename columns to look better
+        ads_df = pd.DataFrame(json_data['ads'])[selected_fields]
+        ads_df.columns = ['Advertiser', 'Facebook Link', 'Website Link', 'Contact', 'Library ID']
+
+        # Drop duplicates based on Advertiser column, keeping the first occurrence
+        ads_df = ads_df.drop_duplicates(subset=['Advertiser'], keep='first')
+
+        # Save to CSV
+        ads_df.to_csv('extracted_ads.csv', index=False)
+
     print(f"✅ Saved to {filename}")
 
 finally:
