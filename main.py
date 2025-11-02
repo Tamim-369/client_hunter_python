@@ -38,7 +38,7 @@ def clean_image_urls(text: str) -> str:
 
 try:
     # === Build & Visit URL ===
-    query = "দেশি মুরগি"  
+    query = "আত্মরক্ষা"  
     url = (
         f"https://www.facebook.com/ads/library/"
         f"?active_status=active"
@@ -111,7 +111,7 @@ try:
         print(f"Analyzing: {ad['advertiser']}")
 
         # Clean URL
-        fb_link = ad['advertiser_facebook_link'].strip()
+        fb_link = ad['advertiser_facebook_link']
 
         # Skip if no valid Facebook link
         if not fb_link or "facebook.com" not in fb_link:
