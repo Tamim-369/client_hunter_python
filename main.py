@@ -34,7 +34,7 @@ def clean_image_urls(text: str) -> str:
 
 try:
     # === Build & Visit URL ===
-    query = "smartwatch"  # or loop through multiple queries
+    query = "gym equipment"  # or loop through multiple queries
     url = (
         f"https://www.facebook.com/ads/library/"
         f"?active_status=active"
