@@ -9,6 +9,9 @@ import json
 # print(f"You clicked at X: {x}, Y: {y}")
 # time.sleep(5)
 # pyautogui.click(867,634)
+
+
+
 with open("extracted_ads.json", "r") as data:
     json_data = json.load(data)
     selected_fields = ['advertiser', 'advertiser_facebook_link', 'advertiser_website_link', 'contact', 'library_id']

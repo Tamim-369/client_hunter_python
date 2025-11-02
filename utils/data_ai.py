@@ -125,40 +125,44 @@ def process_large_ad_file(text: str, chunk_size: int = 3000, output_file: str = 
     for i, chunk in enumerate(chunks):
         print(f"Processing chunk {i+1}/{len(chunks)}...")
         
-        prompt = f"""Extract ALL Facebook ads from this text chunk. Each ad listing contains:
-- Advertiser name
-- Advertiser facebook link
-- Advertiser website link
-- Library ID
-- Start date and active time
-- Ad content/description
-- Contact information
-- Pricing/delivery info
+        prompt = f"""
+You are a data extraction AI specialized in parsing Facebook Ad Library data. 
+Your task: extract EVERY valid Facebook ad from the provided text chunk.
 
-Return ONLY a JSON array of ad objects with this structure (no explanations):
+### Rules (strictly enforced):
+1. Only include ads that:
+   - Contain a valid advertiser Facebook page link.
+   - Are relevant to this query: "{query}".
+2. If no valid, complete ads exist, return exactly: {{"ads": []}} — no text or commentary.
+3. Never add, infer, or guess missing data. If a field is missing, use null.
+4. The response MUST be valid JSON (parseable, no trailing commas).
+
+### Required output schema:
 {{
     "ads": [
         {{
-            "advertiser": "name",
-            "advertiser_facebook_link": "page link",
-            "advertiser_website_link": "website link of the advertiser or None if there is no website link related to the advertiser name",
-            "library_id": "ID number",
-            "start_date": "date",
-            "active_time": "duration",
-            "content_preview": "first 200 chars of ad content",
-            "contact": "phone/email",
-            "delivery_cost_inside": "price",
-            "delivery_cost_outside": "price",
+            "advertiser": "Advertiser name",
+            "advertiser_facebook_link": "https://facebook.com/...",
+            "advertiser_website_link": "https://... or null",
+            "library_id": "Library ID",
+            "start_date": "YYYY-MM-DD",
+            "active_time": "duration text (e.g., 'Active since 10 days')",
+            "content_preview": "first 200 characters of ad text",
+            "contact": "email or phone or null",
+            "delivery_cost_inside": "price info or null",
+            "delivery_cost_outside": "price info or null"
         }}
     ]
 }}
 
-If no complete ads are found, return {{"ads": []}}.
-If the add is not related to this query "{query}" then return {{"ads": []}}.
+### Extraction Notes:
+- “content_preview” = first 200 visible characters of the ad’s content.
+- Trim all whitespace and line breaks from extracted values.
 
-Text chunk:
-{chunk}"""
-        
+### Input Text:
+{chunk}
+"""
+
         try:
             response = llm.invoke([HumanMessage(content=prompt)])
             
@@ -173,9 +177,9 @@ Text chunk:
                 total_new_ads += new_count
             else:
                 print(f"  - No ads found in this chunk")
-                not_found_count+=1
-                if not_found_count > 6:
-                    return total_new_ads
+                # not_found_count+=1
+                # if not_found_count > 20:
+                #     return total_new_ads
 
             
         except Exception as e:
@@ -237,3 +241,4 @@ def process_text_data(text_data: str, query: str, output_file: str = "extracted_
         print_summary(output_file)
         
         return new_ads_count
+

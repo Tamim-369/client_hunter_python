@@ -4,7 +4,8 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import time
-from utils import process_text_data
+from utils import process_text_data, analyze_facebook_lead
+
 import urllib.parse
 import html2text
 import re
@@ -37,13 +38,13 @@ def clean_image_urls(text: str) -> str:
 
 try:
     # === Build & Visit URL ===
-    query = "organic honey"  # or loop through multiple queries
+    query = "দেশি মুরগি"  
     url = (
         f"https://www.facebook.com/ads/library/"
         f"?active_status=active"
         f"&ad_type=all"
         f"&country=BD"
-        f"&is_targeted_country=true"          # ← changed to TRUE
+        f"&is_targeted_country=true"          
         f"&media_type=all"
         f"&q={query}"
         f"&search_type=keyword_unordered"
@@ -87,10 +88,11 @@ try:
         f.write(fullText)
     
     process_text_data(fullText, query)
+    json_data = None
     with open("extracted_ads.json", "r") as data:
         json_data = json.load(data)
         selected_fields = ['advertiser', 'advertiser_facebook_link', 'advertiser_website_link', 'contact', 'library_id']
-
+        
         # Create DataFrame and rename columns to look better
         ads_df = pd.DataFrame(json_data['ads'])[selected_fields]
         ads_df.columns = ['Advertiser', 'Facebook Link', 'Website Link', 'Contact', 'Library ID']
@@ -100,8 +102,45 @@ try:
 
         # Save to CSV
         ads_df.to_csv('extracted_ads.csv', index=False)
+    ads_array = json_data['ads']
 
-    print(f"✅ Saved to {filename}")
+    selected_fields = ['advertiser', 'advertiser_facebook_link', 'advertiser_website_link', 'contact', 'library_id']
+    results = []
+    print("Analyzing every facebook page and sorting according to probability")
+    for ad in json_data['ads']:
+        print(f"Analyzing: {ad['advertiser']}")
+
+        # Clean URL
+        fb_link = ad['advertiser_facebook_link'].strip()
+
+        # Skip if no valid Facebook link
+        if not fb_link or "facebook.com" not in fb_link:
+            lead_result = {"probability": 0, "service": None, "reasoning": "No valid Facebook link"}
+        else:
+            lead_result = analyze_facebook_lead(fb_link)
+            time.sleep(2)  # Be respectful to Groq + FB
+
+        # Combine original ad data + analysis
+        combined = {
+            "Advertiser": ad['advertiser'],
+            "Facebook Link": fb_link,
+            "Website Link": ad['advertiser_website_link'],
+            "Contact": ad['contact'],
+            "Library ID": ad['library_id'],
+            "Buy Probability (%)": lead_result['probability'],
+            "Recommended Service": lead_result['service'],
+            "Reasoning": lead_result['reasoning']
+        }
+        results.append(combined)
+    # Create DataFrame
+    df = pd.DataFrame(results)
+
+    # sort by probability of conversion
+    df = df.sort_values(by="Buy Probability (%)", ascending=False)
+    
+    # Save to CSV
+    df.to_csv('analyzed_leads.csv', index=False, encoding='utf-8')
+    print("Successfully analyzed every facebook page and sorted according to probability and saved in csv")
 
 finally:
     driver.quit()
