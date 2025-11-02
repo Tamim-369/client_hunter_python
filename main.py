@@ -8,6 +8,9 @@ from utils import process_text_data
 import urllib.parse
 import html2text
 import re
+import pandas as pd
+import json
+
 # === Browser Setup ===
 options = Options()
 options.binary_location = "/usr/bin/chromium"
@@ -80,12 +83,19 @@ try:
     fullText = clean_image_urls(fullText)
 
     filename = f"meta_ads_{query.replace(' ', '_')}.txt"
-
     with open(filename, "w", encoding="utf-8") as f:
         f.write(fullText)
+    
     process_text_data(fullText, query)
+    all_ads_json = open("extracted_ads.json","r")
+    df = pd.read_json(all_ads_json)
+    with open('extracted_ads.json', 'r') as f:
+        data = json.load(f)
+    df = pd.json_normalize(data)
+    df.to_csv('extracted_ads.csv', index=False)
     print(f"✅ Saved to {filename}")
 
 finally:
     driver.quit()
     print("Browser closed.")
+

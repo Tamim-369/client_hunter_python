@@ -174,3 +174,4 @@ Thumbs.db
 *.json
 /venv
 *.txt
+*.csv

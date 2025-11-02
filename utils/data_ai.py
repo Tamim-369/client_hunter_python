@@ -127,12 +127,13 @@ def process_large_ad_file(text: str, chunk_size: int = 3000, output_file: str = 
         
         prompt = f"""Extract ALL Facebook ads from this text chunk. Each ad listing contains:
 - Advertiser name
+- Advertiser facebook link
+- Advertiser website link
 - Library ID
 - Start date and active time
 - Ad content/description
 - Contact information
 - Pricing/delivery info
-- Hashtags
 
 Return ONLY a JSON array of ad objects with this structure (no explanations):
 {{
@@ -148,7 +149,6 @@ Return ONLY a JSON array of ad objects with this structure (no explanations):
             "contact": "phone/email",
             "delivery_cost_inside": "price",
             "delivery_cost_outside": "price",
-            "hashtags": ["tag1", "tag2"]
         }}
     ]
 }}
