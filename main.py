@@ -11,6 +11,7 @@ import html2text
 import re
 import pandas as pd
 import json
+import csv
 
 # === Browser Setup ===
 options = Options()
@@ -38,7 +39,7 @@ def clean_image_urls(text: str) -> str:
 
 try:
     # === Build & Visit URL ===
-    query = "আত্মরক্ষা"  
+    query = "চিংড়ি"  
     url = (
         f"https://www.facebook.com/ads/library/"
         f"?active_status=active"
@@ -112,14 +113,19 @@ try:
 
         # Clean URL
         fb_link = ad['advertiser_facebook_link']
-
+        if "facebook.com" not in fb_link:
+            lead_result = {"probability": 0, "service": None, "reasoning": "No valid Facebook link"}
+        pagename = fb_link.split("com/")[1].replace("/", "")
         # Skip if no valid Facebook link
-        if not fb_link or "facebook.com" not in fb_link:
+        isNumber = pagename.isnumeric()
+        # Skip if no valid Facebook link
+        if not fb_link or isNumber or not isinstance(pagename, str):
             lead_result = {"probability": 0, "service": None, "reasoning": "No valid Facebook link"}
         else:
             lead_result = analyze_facebook_lead(fb_link)
             time.sleep(2)  # Be respectful to Groq + FB
-
+        reasoning = lead_result['reasoning'].replace('"', '').replace('}\n', '').replace('```','\n').replace("json","").replace("{","").strip() if lead_result['reasoning'] else ''
+        
         # Combine original ad data + analysis
         combined = {
             "Advertiser": ad['advertiser'],
@@ -129,7 +135,7 @@ try:
             "Library ID": ad['library_id'],
             "Buy Probability (%)": lead_result['probability'],
             "Recommended Service": lead_result['service'],
-            "Reasoning": lead_result['reasoning']
+            "Reasoning": reasoning
         }
         results.append(combined)
     # Create DataFrame
@@ -138,8 +144,8 @@ try:
     # sort by probability of conversion
     df = df.sort_values(by="Buy Probability (%)", ascending=False)
     
-    # Save to CSV
-    df.to_csv('analyzed_leads.csv', index=False, encoding='utf-8')
+    # Save to CSV with quotes properly escaped
+    df.to_csv('analyzed_leads.csv', index=False, encoding='utf-8', quoting=csv.QUOTE_ALL, escapechar='\\')
     print("Successfully analyzed every facebook page and sorted according to probability and saved in csv")
 
 finally:

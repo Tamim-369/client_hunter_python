@@ -104,7 +104,9 @@ def analyze_facebook_lead(url: str) -> dict:
 
     # --- Step 1: Get text content efficiently
     text = getPageData(url)
-    if not text or len(text.strip()) < 50:
+    pagename = url.split("com/")[1].replace("/", "")
+    print(pagename)
+    if not text or len(text.strip()) < 50 or pagename.isdigit():
         return {
             "probability": 0,
             "service": None,
@@ -114,7 +116,7 @@ def analyze_facebook_lead(url: str) -> dict:
     # Limit input size to reduce token cost and latency
     text = text[:2000]
 
-    # --- Step 2: Create the prompt once (cached globally if reused)
+    # --- Step 2: Create the prompt with escaped braces
     prompt_template = ChatPromptTemplate.from_messages([
         ("system", """You are a B2B sales analyst. The user offers:
 1. AI automation / automated bots
@@ -122,12 +124,12 @@ def analyze_facebook_lead(url: str) -> dict:
 3. Security audits for websites/apps
 4. Securing + maintaining existing e-commerce sites
 
-Analyze the Facebook page content and respond in **strict JSON**:
-{
-  "Probability": <0-100>,
+Analyze the Facebook page content and respond in strict JSON format like:
+{{
+  "Probability": <number between 0-100>,
   "Service": "<exact service name>",
   "Reasoning": "<1-2 sentences>"
-}
+}}
 
 Be realistic — personal or inactive pages = low probability."""),
         ("human", "{content}")
@@ -157,7 +159,6 @@ Be realistic — personal or inactive pages = low probability."""),
             service = match.group(2).strip()
             reasoning = match.group(3).strip()
         else:
-            # fallback in case parsing fails
             probability, service, reasoning = 0, None, "Parsing failed."
 
         return {
@@ -172,6 +173,5 @@ Be realistic — personal or inactive pages = low probability."""),
             "service": None,
             "reasoning": f"Analysis failed: {str(e)}"
         }
-
 
 
