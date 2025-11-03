@@ -4,8 +4,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import time
-from utils import process_text_data, analyze_facebook_lead
-
+from utils import process_text_data, analyze_facebook_lead, proccess_leads
 import urllib.parse
 import html2text
 import re
@@ -90,7 +89,6 @@ try:
         f.write(fullText)
     
     process_text_data(fullText, query)
-    json_data = None
     with open("extracted_ads.json", "r") as data:
         json_data = json.load(data)
         selected_fields = ['advertiser', 'advertiser_facebook_link', 'advertiser_website_link', 'contact', 'library_id']
@@ -104,58 +102,8 @@ try:
 
         # Save to CSV
         ads_df.to_csv('extracted_ads.csv', index=False)
-    ads_array = json_data['ads']
-
-    selected_fields = ['advertiser', 'advertiser_facebook_link', 'advertiser_website_link', 'contact', 'library_id']
-    results = []
-    print("Analyzing every facebook page and sorting according to probability")
-    for ad in json_data['ads']:
-        print(f"Analyzing: {ad['advertiser']}")
-
-        # Clean URL
-        fb_link = ad['advertiser_facebook_link']
-
-        # Extract pagename safely
-        pagename = ""
-        if fb_link and "facebook.com" in fb_link and "com/" in fb_link:
-            try:
-                pagename = fb_link.split("com/")[1].replace("/", "")
-            except IndexError:
-                pagename = ""
-
-        isNumber = pagename.isnumeric()
-
-        # Skip if no valid Facebook link
-        if not fb_link or not pagename or isNumber:
-            lead_result = {"probability": 0, "service": None, "reasoning": "No valid Facebook link"}
-        else:
-            lead_result = analyze_facebook_lead(fb_link, ad["advertiser"] or "unknown")
-            time.sleep(2)
-
-        reasoning = lead_result['reasoning'].replace('"', '').replace('}\n', '').replace('```','\n').replace("json","").replace("{","").strip() if lead_result['reasoning'] else ''
-
-        if pagename and not isNumber:
-            combined = {
-                "Advertiser": ad['advertiser'],
-                "Facebook Link": fb_link,
-                "Website Link": ad['advertiser_website_link'],
-                "Contact": ad['contact'],
-                "Library ID": ad['library_id'],
-                "Buy Probability (%)": lead_result['probability'],
-                "Recommended Service": lead_result['service'],
-                "Reasoning": reasoning
-            }
-            results.append(combined)
-    # Create DataFrame
-    df = pd.DataFrame(results)
-
-    # sort by probability of conversion
-    df = df.sort_values(by="Buy Probability (%)", ascending=False)
-    
-    # Save to CSV with quotes properly escaped
-    df.to_csv('analyzed_leads.csv', index=False, encoding='utf-8', quoting=csv.QUOTE_ALL, escapechar='\\')
+        proccess_leads(json_data['ads'])
     print("Successfully analyzed every facebook page and sorted according to probability and saved in csv")
-
 finally:
     driver.quit()
     print("Browser closed.")
