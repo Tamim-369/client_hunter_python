@@ -10,6 +10,7 @@ import urllib.parse
 import html2text
 import re
 import pandas as pd
+from .database import LeadDB, LeadModel
 import json
 import csv
 import requests
@@ -221,21 +222,19 @@ def generate_pitch_and_link(row: dict) -> tuple:
     return pitch.strip(), wa_link
 
 
-# ========================================
-# 4. MAIN PROCESSOR — FULLY UPGRADED
-# ========================================
-def proccess_leads(ads_array: any):
+def proccess_leads(ads_array: list):
+    db = LeadDB()
     results = []
-    print("Analyzing every Facebook page and sorting according to probability")
+
+    print("Starting FB Lead Analysis → MongoDB Atlas")
 
     for ad in ads_array:
-        print(f"Analyzing: {ad.get('advertiser', 'Unknown')}")
+        print(f"→ Analyzing: {ad.get('advertiser', 'Unknown')}")
 
-        # --- SAFELY EXTRACT ---
+        # === EXTRACT & CLEAN ===
         fb_link = str(ad.get('advertiser_facebook_link') or "").strip()
-        website_raw = ad.get('advertiser_website_link')
         website = ""
-
+        website_raw = ad.get('advertiser_website_link')
         if website_raw and isinstance(website_raw, str):
             website = website_raw.strip()
             if website.lower() in ["none", "null", ""] or not website:
@@ -243,83 +242,73 @@ def proccess_leads(ads_array: any):
             elif not website.startswith(("http://", "https://")):
                 website = "https://" + website
 
-        # Extract pagename safely
+        # === PAGENAME ===
         pagename = ""
         if fb_link and "facebook.com" in fb_link:
             try:
                 pagename = fb_link.split("facebook.com/")[1].split("?")[0].split("#")[0].rstrip("/")
             except:
-                pagename = ""
+                pass
+        if not pagename or pagename.isdigit():
+            continue
 
-        isNumber = pagename.isdigit() if pagename else True
+        # === FB ANALYSIS ===
+        lead_result = analyze_facebook_lead(fb_link, ad.get("advertiser", "unknown"))
+        time.sleep(2)
 
-        # Analyze FB page
-        if not fb_link or not pagename or isNumber:
-            lead_result = {"probability": 0, "service": None, "reasoning": "No valid Facebook link"}
-        else:
-            lead_result = analyze_facebook_lead(fb_link, ad.get("advertiser", "unknown"))
-            time.sleep(2)
-
-        reasoning = (lead_result.get('reasoning', '') or "").replace('"', '').replace('}\n', '').replace('```', '\n').replace("json", "").replace("{", "").strip()
-
-        # Website scan
+        # === WEBSITE SCAN ===
         issues = ""
-        service = lead_result.get('service', '') or ""
-        if "security" in service.lower() or "maintaining" in service.lower() or "audit" in service.lower():
+        service = str(lead_result.get('service', '') or "").lower()
+        if any(x in service for x in ["security", "maintaining", "audit"]):
             if website:
-                print(f"   → Scanning website: {website}")
                 issues = analyze_website_issues(website)
                 time.sleep(1)
             else:
                 issues = "FB-only store — perfect for AI Chatbot + Auto-Order System"
 
-        # Conversion metrics
+        # === METRICS ===
         metrics = estimate_conversion_metrics(ad, issues)
 
-        # Contact
-        contact = str(ad.get('contact') or "").strip()
-
-        # Build row
-        temp_row = {
-            "Advertiser": ad.get('advertiser', 'Unknown'),
-            "Facebook Link": fb_link,
-            "Website Link": website or "FB Only",
-            "Contact": contact,
-            "Library ID": ad.get('library_id', '') or "",
-            "Buy Probability (%)": lead_result.get('probability', 0),
-            "Recommended Service": service,
-            "Reasoning": reasoning,
-            "issues": issues or "FB-only store — AI automation ready",
-            **metrics
+        # === BUILD LEAD ===
+        lead = {
+            "advertiser": ad.get('advertiser', 'Unknown'),
+            "facebook_link": fb_link,
+            "website_link": website or "FB Only",
+            "contact": str(ad.get('contact') or "").strip(),
+            "library_id": ad.get('library_id', '') or f"temp_{int(time.time())}",
+            "probability": lead_result.get('probability', 0),
+            "service": lead_result.get('service', ''),
+            "reasoning": str(lead_result.get('reasoning', '')).strip(),
+            "issues": issues,
+            **metrics,
+            "status": "new",
+            "tags": ["fb-ad"]
         }
 
-        pitch, wa_link = generate_pitch_and_link(temp_row)
-        temp_row["Pitch Draft (Bangla)"] = pitch
-        temp_row["WhatsApp DM Link"] = wa_link
+        # === PITCH ===
+        pitch_row = LeadModel.default_pitch_row(lead)
+        pitch, wa_link = generate_pitch_and_link(pitch_row)
+        lead["pitch"] = pitch
+        lead["whatsapp_link"] = wa_link
 
-        if pagename and not isNumber:
-            results.append(temp_row)
+        results.append(lead)
 
-    # Create DataFrame
-    df = pd.DataFrame(results)
-    if not df.empty:
-        df = df.sort_values(by="Buy Probability (%)", ascending=False)
+    # === SAVE TO MONGODB ===
+    summary = db.bulk_upsert(results)
+    print(f"MongoDB: {summary['saved']} saved, {summary['updated']} updated")
 
-    # Save to CSV
-    df.to_csv('analyzed_leads.csv', index=False, encoding='utf-8', quoting=csv.QUOTE_ALL, escapechar='\\')
-    print(f"\nDone! {len(df)} leads saved to 'analyzed_leads.csv'")
+    # === EXPORT CSV (backup) ===
+    if results:
+        df = pd.DataFrame(results)
+        df.to_csv("backup_leads.csv", index=False, encoding="utf-8")
+        print("Backup saved: backup_leads.csv")
 
-    # AUTO-PRINT TOP 5 HIGH-DM LEADS
-    high_dm = df[
-        (df["Buy Probability (%)"] >= 65) &
-        (df["DM Open Rate Prediction"].str.contains("High|Medium", na=False)) &
-        (df["Contact"] != "")
-    ].head(5)
+    # === TOP 5 LEADS ===
+    top_leads = db.get_high_priority(min_prob=65, limit=5)
+    if top_leads:
+        print("\nTOP 5 LEADS — OPEN WHATSAPP:")
+        for lead in top_leads:
+            print(lead["whatsapp_link"])
 
-    if not high_dm.empty:
-        print("\nTOP 5 LEADS — OPEN IN BROWSER NOW:")
-        for _, row in high_dm.iterrows():
-            if row["WhatsApp DM Link"]:
-                print(row["WhatsApp DM Link"])
+    return results
 
-    return df

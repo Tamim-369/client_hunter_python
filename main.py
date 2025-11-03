@@ -103,7 +103,7 @@ try:
         # Save to CSV
         ads_df.to_csv('extracted_ads.csv', index=False)
         proccess_leads(json_data['ads'])
-    print("Successfully analyzed every facebook page and sorted according to probability and saved in csv")
+    print("\n\n[+]: Successfully analyzed every facebook page and sorted according to probability and saved in Database\n\n")
 finally:
     driver.quit()
     print("Browser closed.")
