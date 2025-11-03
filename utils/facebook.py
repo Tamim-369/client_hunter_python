@@ -9,6 +9,8 @@ from langchain_classic.prompts import ChatPromptTemplate
 from langchain_classic.schema.output_parser import StrOutputParser
 from langchain_groq import ChatGroq 
 import re
+import json
+from ddgs import DDGS
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -94,18 +96,19 @@ def getPageData(page_url:str):
     
 
 
-def analyze_facebook_lead(url: str) -> dict:
+def analyze_facebook_lead(url: str, advertiser_name: str = "") -> dict:
     """
-    Efficiently analyzes a Facebook page's content to predict:
+    Deeply analyzes a Facebook lead using both on-page content and external research
+    to predict:
       - Probability (0–100) of buying your service
       - Most likely service
       - Short reasoning
     """
 
-    # --- Step 1: Get text content efficiently
+    # --- Step 1: Get base Facebook content
     text = getPageData(url)
-    pagename = url.split("com/")[1].replace("/", "")
-    print(pagename)
+    pagename = url.split("com/")[1].replace("/", "").strip()
+
     if not text or len(text.strip()) < 50 or pagename.isdigit():
         return {
             "probability": 0,
@@ -113,53 +116,86 @@ def analyze_facebook_lead(url: str) -> dict:
             "reasoning": "Insufficient or empty page content."
         }
 
-    # Limit input size to reduce token cost and latency
-    text = text[:2000]
+    text = text[:3000]  # allow slightly more content for context
 
-    # --- Step 2: Create the prompt with escaped braces
+    # --- Step 2: External research with DuckDuckGo
+    research_text = ""
+    try:
+        query = f"{advertiser_name or pagename} site:.com OR site:.bd OR site:.io OR facebook.com"
+        with DDGS() as ddgs:
+            results = [r.get("body", "") + " " + r.get("title", "") for r in ddgs.text(query, max_results=5)]
+            research_text = "\n".join([r for r in results if len(r) > 50])
+    except Exception:
+        research_text = ""
+
+    if len(research_text) < 50:
+        research_text = "No strong external data found; analyze only Facebook content."
+
+    combined_content = f"Facebook Page Content:\n{text}\n\nExternal Research Data:\n{research_text}"
+
+    # --- Step 3: Smart prompt
     prompt_template = ChatPromptTemplate.from_messages([
-        ("system", """You are a B2B sales analyst. The user offers:
-1. AI automation / automated bots
-2. E-commerce website development + maintenance
-3. Security audits for websites/apps
-4. Securing + maintaining existing e-commerce sites
+    ("system", """You are an elite B2B sales analyst helping a small digital agency.
+The agency sells:
+1. AI automation / chatbot systems
+2. E-commerce website development and maintenance
+3. Security audits for websites and apps
+4. Securing and maintaining existing online stores
 
-Analyze the Facebook page content and respond in strict JSON format like:
+The agency owner only wants leads who will likely REPLY to his DM/email — not massive corporations or inactive shops.
+If the page seems too large (corporate, celebrity, verified, 100K+ followers), reduce probability.
+If it seems too small (no contact info, personal account, <100 followers), reduce probability.
+If it's a local business, active, and professionally branded, increase probability.
+
+Your task:
+Analyze both the Facebook page and any external data to predict:
+- Probability (0–100) of this lead replying and buying one of the services soon
+- The exact service that fits best
+- A short, realistic reasoning (1-2 sentences max)
+
+Return STRICT JSON:
 {{
   "Probability": <number between 0-100>,
   "Service": "<exact service name>",
   "Reasoning": "<1-2 sentences>"
 }}
+"""),
+    ("human", "{content}")
+])
 
-Be realistic — personal or inactive pages = low probability."""),
-        ("human", "{content}")
-    ])
-
-    # --- Step 3: Use the model
+    # --- Step 4: Run the model
     llm = ChatGroq(
-        model="meta-llama/llama-4-maverick-17b-128e-instruct",
+        model="openai/gpt-oss-120b",
         temperature=0.1,
     )
 
     chain = prompt_template | llm | StrOutputParser()
 
-    # --- Step 4: Execute
     try:
-        response = chain.invoke({"content": text})
+        response = chain.invoke({"content": combined_content})
 
-        # --- Step 5: Parse JSON-like output robustly
-        match = re.search(
-            r'"?Probability"?\s*[:=]\s*(\d+).*?"?Service"?\s*[:=]\s*["\']?([^"\n]+)["\']?.*?"?Reasoning"?\s*[:=]\s*["\']?(.+?)["\']?\s*$', 
-            response, 
-            re.DOTALL | re.IGNORECASE
-        )
+        # --- Step 5: Parse JSON robustly
+        json_str = None
+        try:
+            json_str = re.search(r'\{.*\}', response, re.DOTALL).group(0)
+            data = json.loads(json_str)
+        except Exception:
+            match = re.search(
+                r'"?Probability"?\s*[:=]\s*(\d+).*?"?Service"?\s*[:=]\s*["\']?([^"\n]+)["\']?.*?"?Reasoning"?\s*[:=]\s*["\']?(.+?)["\']?\s*$',
+                response, re.DOTALL | re.IGNORECASE
+            )
+            if match:
+                data = {
+                    "Probability": int(match.group(1)),
+                    "Service": match.group(2).strip(),
+                    "Reasoning": match.group(3).strip()
+                }
+            else:
+                data = {"Probability": 0, "Service": None, "Reasoning": "Parsing failed."}
 
-        if match:
-            probability = int(match.group(1))
-            service = match.group(2).strip()
-            reasoning = match.group(3).strip()
-        else:
-            probability, service, reasoning = 0, None, "Parsing failed."
+        probability = int(data.get("Probability", data.get("probability", 0)))
+        service = data.get("Service") or data.get("service")
+        reasoning = data.get("Reasoning") or data.get("reasoning")
 
         return {
             "probability": min(100, max(0, probability)),
@@ -173,5 +209,3 @@ Be realistic — personal or inactive pages = low probability."""),
             "service": None,
             "reasoning": f"Analysis failed: {str(e)}"
         }
-
-

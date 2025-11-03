@@ -87,50 +87,98 @@
 
 
 
-from utils.facebook import analyze_facebook_lead
+from utils import analyze_facebook_lead
 import json
 import time
 import pandas as pd
-results = []
-print("Loading json data")
-json_data = None
-with open("extracted_ads.json", "r") as data:
-     json_data = json.load(data)
+# results = []
+# print("Loading json data")
+# json_data = None
+# with open("extracted_ads.json", "r") as data:
+#      json_data = json.load(data)
 
-for ad in json_data["ads"]:
-        print(f"Analyzing: {ad['advertiser']}")
+# for ad in json_data["ads"]:
+#         print(f"Analyzing: {ad['advertiser']}")
 
-        # Clean URL
-        fb_link = ad['advertiser_facebook_link']
-        pagename = fb_link.split("com/")[1].replace("/", "")
-        # Skip if no valid Facebook link
-        isNumber = pagename.isnumeric()
-        if not fb_link or "facebook.com" not in fb_link or isNumber:
-            lead_result = {"probability": 0, "service": None, "reasoning": "No valid Facebook link"}
-        else:
-            lead_result = analyze_facebook_lead(fb_link)
-            time.sleep(2)  # Be respectful to Groq + FB
+#         # Clean URL
+#         fb_link = ad['advertiser_facebook_link']
+#         pagename = fb_link.split("com/")[1].replace("/", "")
+#         # Skip if no valid Facebook link
+#         isNumber = pagename.isnumeric()
+#         if not fb_link or "facebook.com" not in fb_link or isNumber:
+#             lead_result = {"probability": 0, "service": None, "reasoning": "No valid Facebook link"}
+#         else:
+#             lead_result = analyze_facebook_lead(fb_link)
+#             time.sleep(2)  # Be respectful to Groq + FB
 
-        # Clean reasoning text by removing unwanted characters
-        reasoning = lead_result['reasoning'].replace('"', '').replace('}\n', '').replace('```','\n').strip() if lead_result['reasoning'] else ''
+#         # Clean reasoning text by removing unwanted characters
+#         reasoning = lead_result['reasoning'].replace('"', '').replace('}\n', '').replace('```','\n').strip() if lead_result['reasoning'] else ''
         
-        # Combine original ad data + analysis
-        combined = {
-            "Advertiser": ad['advertiser'],
-            "Facebook Link": fb_link,
-            "Website Link": ad['advertiser_website_link'],
-            "Contact": ad['contact'],
-            "Library ID": ad['library_id'],
-            "Buy Probability (%)": lead_result['probability'],
-            "Recommended Service": lead_result['service'],
-            "Reasoning": reasoning
-        }
-        results.append(combined)
-# Create DataFrame
-df = pd.DataFrame(results)
-# sort by probability of conversion
-df = df.sort_values(by="Buy Probability (%)", ascending=False)
+#         # Combine original ad data + analysis
+#         combined = {
+#             "Advertiser": ad['advertiser'],
+#             "Facebook Link": fb_link,
+#             "Website Link": ad['advertiser_website_link'],
+#             "Contact": ad['contact'],
+#             "Library ID": ad['library_id'],
+#             "Buy Probability (%)": lead_result['probability'],
+#             "Recommended Service": lead_result['service'],
+#             "Reasoning": reasoning
+#         }
+#         results.append(combined)
+# # Create DataFrame
+# df = pd.DataFrame(results)
+# # sort by probability of conversion
+# df = df.sort_values(by="Buy Probability (%)", ascending=False)
 
-# Save to CSV
-df.to_csv('analyzed_leads.csv', index=False, encoding='utf-8')
-print("Successfully analyzed every facebook page and sorted according to probability and saved in csv")
+# # Save to CSV
+# df.to_csv('analyzed_leads.csv', index=False, encoding='utf-8')
+# print("Successfully analyzed every facebook page and sorted according to probability and saved in csv")
+
+pages_to_test = [
+    # 🧠 Low-probability
+    {"url": "https://www.facebook.com/amardinlipi1/", "name": "আমার দিনলিপি"},
+    {"url": "https://www.facebook.com/meme.lovers.bd", "name": "Meme Lovers BD"},
+    {"url": "https://www.facebook.com/cute.cat.pictures.bd", "name": "Cute Cat Pictures BD"},
+
+    # 💼 Medium-probability
+    {"url": "https://www.facebook.com/freelancertanvir", "name": "Freelancer Tanvir"},
+    {"url": "https://www.facebook.com/graphicpointbd", "name": "Graphic Point BD"},
+    {"url": "https://www.facebook.com/bdbrandshop", "name": "BD Brand Shop"},
+
+    # 🏢 High-probability
+    {"url": "https://www.facebook.com/darazbd", "name": "Daraz Bangladesh"},
+    {"url": "https://www.facebook.com/shajgoj", "name": "Shajgoj"},
+    {"url": "https://www.facebook.com/othoba.com.bd", "name": "Othoba.com"},
+
+    # 🔒 Tech/Security
+    {"url": "https://www.facebook.com/pathao", "name": "Pathao"},
+    {"url": "https://www.facebook.com/foodpandaBangladesh", "name": "Foodpanda Bangladesh"},
+]
+
+results = []
+
+print("[+] Starting batch Facebook lead analysis...\n")
+
+for i, page in enumerate(pages_to_test, start=1):
+    print(f"[{i}/{len(pages_to_test)}] Analyzing: {page['name']} -> {page['url']}")
+    try:
+        data = analyze_facebook_lead(page["url"], page["name"])
+    except Exception as e:
+        data = {"probability": 0, "service": None, "reasoning": f"Error: {str(e)}"}
+    
+    page_result = {
+        "page_name": page["name"],
+        "url": page["url"],
+        **data
+    }
+    results.append(page_result)
+    
+    # Sleep a bit to avoid request limits or rate bans
+    time.sleep(2)
+
+# --- Save to JSON file ---
+with open("output.json", "w", encoding="utf-8") as f:
+    json.dump(results, f, ensure_ascii=False, indent=2)
+
+print("\n✅ Analysis completed. Results saved to 'output.json'.")

@@ -39,18 +39,19 @@ def clean_image_urls(text: str) -> str:
 
 try:
     # === Build & Visit URL ===
-    query = "চিংড়ি"  
+    query = "online store Dhaka" 
     url = (
         f"https://www.facebook.com/ads/library/"
         f"?active_status=active"
         f"&ad_type=all"
         f"&country=BD"
-        f"&is_targeted_country=true"          
+        f"&is_targeted_country=true"
         f"&media_type=all"
         f"&q={query}"
         f"&search_type=keyword_unordered"
-        f"&impression_condition=HAS_IMPRESSIONS_LAST_7DAYS"  
+        f"&impression_condition=HAS_IMPRESSIONS_LAST_7DAYS"
     )
+
     print(f"Visiting: {url}")
     driver.get(url)
 
@@ -113,31 +114,38 @@ try:
 
         # Clean URL
         fb_link = ad['advertiser_facebook_link']
-        if "facebook.com" not in fb_link:
-            lead_result = {"probability": 0, "service": None, "reasoning": "No valid Facebook link"}
-        pagename = fb_link.split("com/")[1].replace("/", "")
-        # Skip if no valid Facebook link
+
+        # Extract pagename safely
+        pagename = ""
+        if fb_link and "facebook.com" in fb_link and "com/" in fb_link:
+            try:
+                pagename = fb_link.split("com/")[1].replace("/", "")
+            except IndexError:
+                pagename = ""
+
         isNumber = pagename.isnumeric()
+
         # Skip if no valid Facebook link
-        if not fb_link or isNumber or not isinstance(pagename, str):
+        if not fb_link or not pagename or isNumber:
             lead_result = {"probability": 0, "service": None, "reasoning": "No valid Facebook link"}
         else:
-            lead_result = analyze_facebook_lead(fb_link)
-            time.sleep(2)  # Be respectful to Groq + FB
+            lead_result = analyze_facebook_lead(fb_link, ad["advertiser"] or "unknown")
+            time.sleep(2)
+
         reasoning = lead_result['reasoning'].replace('"', '').replace('}\n', '').replace('```','\n').replace("json","").replace("{","").strip() if lead_result['reasoning'] else ''
-        
-        # Combine original ad data + analysis
-        combined = {
-            "Advertiser": ad['advertiser'],
-            "Facebook Link": fb_link,
-            "Website Link": ad['advertiser_website_link'],
-            "Contact": ad['contact'],
-            "Library ID": ad['library_id'],
-            "Buy Probability (%)": lead_result['probability'],
-            "Recommended Service": lead_result['service'],
-            "Reasoning": reasoning
-        }
-        results.append(combined)
+
+        if pagename and not isNumber:
+            combined = {
+                "Advertiser": ad['advertiser'],
+                "Facebook Link": fb_link,
+                "Website Link": ad['advertiser_website_link'],
+                "Contact": ad['contact'],
+                "Library ID": ad['library_id'],
+                "Buy Probability (%)": lead_result['probability'],
+                "Recommended Service": lead_result['service'],
+                "Reasoning": reasoning
+            }
+            results.append(combined)
     # Create DataFrame
     df = pd.DataFrame(results)
 
