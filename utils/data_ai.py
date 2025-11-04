@@ -120,11 +120,11 @@ Your task: extract EVERY valid Facebook ad from the provided text chunk.
 1. Only include ads that:
    - Contain a valid advertiser Facebook page link.
    - Are relevant to this query: "{query}".
-2. If no valid, complete ads exist, return exactly: {{"ads": []}} — no text or commentary.
+2. If no valid, complete ads exist, return exactly: {{"ads": []}}
 3. Never add, infer, or guess missing data. If a field is missing, use null.
-4. The response MUST be valid JSON (parseable, no trailing commas).
+4. The response MUST contain valid JSON (parseable, no trailing commas) and you also have to give a simple 5 line text explaination
 
-### Required output schema:
+### Required json schema:
 {{
     "ads": [
         {{

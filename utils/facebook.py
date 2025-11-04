@@ -7,8 +7,8 @@ from bs4 import BeautifulSoup
 import time
 from langchain_classic.prompts import ChatPromptTemplate
 from langchain_classic.schema.output_parser import StrOutputParser
-from langchain_openai import ChatOpenAI 
 import re
+from humanauto import chatDuckAIJson
 import json
 from ddgs import DDGS
 from dotenv import load_dotenv
@@ -95,6 +95,8 @@ def getPageData(page_url:str):
         return ""
     
 
+
+
 def analyze_facebook_lead(url: str, advertiser_name: str = "") -> dict:
     text = getPageData(url)
     pagename = url.split("com/")[1].replace("/", "").strip()
@@ -146,11 +148,9 @@ Return STRICT JSON:
         ("human", "{content}")
     ])
 
-    llm = ChatOpenAI(model="phi4-mini-reasoning", temperature=0.1)
-    chain = prompt_template | llm | StrOutputParser()
-
+    
     try:
-        response = chain.invoke({"content": combined_content})  # <-- Fixed typo
+        response = chatDuckAIJson(prompt_template)
 
         # Parse JSON robustly
         json_str = None
@@ -183,4 +183,7 @@ Return STRICT JSON:
 
     except Exception as e:
         return {"probability": 0, "service": None, "reasoning": f"Analysis failed: {str(e)}"}
+
+
+
 
