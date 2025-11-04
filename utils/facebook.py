@@ -138,7 +138,7 @@ Analyze both the Facebook page and any external data to predict:
 - The exact service that fits best
 - A short, realistic reasoning (1-2 sentences max)
 
-Return STRICT JSON:
+Explain and Return JSON with this Exact Structure:
 {{
   "Probability": <number between 0-100>,
   "Service": "<exact service name>",
