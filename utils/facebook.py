@@ -119,8 +119,7 @@ def analyze_facebook_lead(url: str, advertiser_name: str = "") -> dict:
     combined_content = f"Facebook Page Content:\n{text}\n\nExternal Research Data:\n{research_text}"
 
     # Prompt template
-    prompt_template = ChatPromptTemplate.from_messages([
-    ("system", """You are an elite B2B sales analyst helping a small digital agency based in Bangladesh.  
+    prompt = """You are an elite B2B sales analyst helping a small digital agency based in Bangladesh.  
 The agency offers only these four services:  
 1. AI automation / chatbot systems  
 2. E-commerce website development and maintenance  
@@ -154,12 +153,10 @@ This business runs an active online clothing store with recent posts but lacks p
   "Service": "Securing and maintaining existing online stores",
   "Reasoning": "Active e-commerce store with visible contact info and recent updates, but shows signs of outdated security practices."
 }
-```"""),
-    ("human", "{content}")
-])
+```"""
     
     try:
-        response = chatDuckAIJson(prompt_template)
+        response = chatDuckAIJson(prompt)
 
         # Parse JSON robustly
         json_str = None

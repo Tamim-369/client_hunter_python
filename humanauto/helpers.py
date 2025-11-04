@@ -220,8 +220,6 @@ def wait_until_appears_image(image_path, timeout=30, confidence=0.8, interval=0.
         time.sleep(interval)
 
 
-
-
 def click_on_image(image_path, timeout=30, confidence=0.8, move_duration=0.3):
     """
     Waits for an image to appear on screen and clicks it once found.
@@ -320,12 +318,19 @@ def chatDuckAIJson(prompt:str):
     wait(0.5)
     write("copy code")
     wait(0.5)
-    wait_until_appears_image("./assets/ocr/duckai_copy_code2.png")
-    wait(0.5)
-    click_on_image("./assets/ocr/duckai_copy_code2.png")
-    wait(2)
-    copied_text = get_copied_value()
-    print(copied_text)
-    press("Alt", "F4")
-    data = json.loads(copied_text)
+    isExist = wait_until_appears_image("./assets/ocr/duckai_copy_code2.png", timeout=10)
+    if isExist == None:
+        wait(0.5)
+        press("Alt", "F4")
+        wait(0.5)
+        chatDuckAIJson(prompt)
+        wait(0.5)
+    else:
+        wait(0.5)
+        click_on_image("./assets/ocr/duckai_copy_code2.png")
+        wait(2)
+        copied_text = get_copied_value()
+        print(copied_text)
+        press("Alt", "F4")
+        data = json.loads(copied_text)
     return data
