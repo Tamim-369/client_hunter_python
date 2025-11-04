@@ -149,7 +149,7 @@ Example of correct output:
 This business runs an active online clothing store with recent posts but lacks proper security headers. They’re likely to invest in maintenance and protection.  
 ```json
 {
-  "Probability": 78,
+  "Probability": "78",
   "Service": "Securing and maintaining existing online stores",
   "Reasoning": "Active e-commerce store with visible contact info and recent updates, but shows signs of outdated security practices.",
 }

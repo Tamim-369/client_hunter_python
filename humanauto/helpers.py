@@ -326,7 +326,7 @@ def chatDuckAIJson(prompt:str):
         chatDuckAIJson(prompt)
         wait(0.5)
     else:
-        wait(0.5)
+        wait(3)
         click_on_image("./assets/ocr/duckai_copy_code2.png")
         wait(2)
         copied_text = get_copied_value()
