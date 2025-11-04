@@ -1,4 +1,4 @@
-from langchain_groq import ChatGroq
+from langchain_ollama import ChatOllama
 from langchain_classic.text_splitter import RecursiveCharacterTextSplitter
 from langchain_classic.schema import HumanMessage
 from typing import List, Dict
@@ -115,8 +115,8 @@ def process_large_ad_file(text: str, chunk_size: int = 3000, output_file: str = 
     
     chunks = text_splitter.split_text(text)
     
-    llm = ChatGroq(
-        model="meta-llama/llama-4-maverick-17b-128e-instruct",
+    llm = ChatOllama(
+        model="phi4-mini-reasoning",
         temperature=0.1,
     )
     

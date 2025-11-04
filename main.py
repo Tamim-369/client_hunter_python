@@ -5,12 +5,10 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import time
 from utils import process_text_data, analyze_facebook_lead, proccess_leads
-import urllib.parse
 import html2text
 import re
 import pandas as pd
 import json
-import csv
 
 # === Browser Setup ===
 options = Options()
@@ -19,7 +17,7 @@ options.add_argument("--headless")          # Critical: avoids ad blocker
 options.add_argument("--no-sandbox")
 options.add_argument("--disable-dev-shm-usage")
 options.add_argument("--disable-gpu")
-options.add_argument("--window-size=1920,1080")
+options.add_argument("--window-size=1932,1180")
 options.add_argument("--disable-extensions")
 
 from webdriver_manager.chrome import ChromeDriverManager

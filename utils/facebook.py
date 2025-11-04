@@ -7,7 +7,7 @@ from bs4 import BeautifulSoup
 import time
 from langchain_classic.prompts import ChatPromptTemplate
 from langchain_classic.schema.output_parser import StrOutputParser
-from langchain_groq import ChatGroq 
+from langchain_openai import ChatOpenAI 
 import re
 import json
 from ddgs import DDGS
@@ -95,47 +95,30 @@ def getPageData(page_url:str):
         return ""
     
 
-
 def analyze_facebook_lead(url: str, advertiser_name: str = "") -> dict:
-    """
-    Deeply analyzes a Facebook lead using both on-page content and external research
-    to predict:
-      - Probability (0–100) of buying your service
-      - Most likely service
-      - Short reasoning
-    """
-
-    # --- Step 1: Get base Facebook content
     text = getPageData(url)
     pagename = url.split("com/")[1].replace("/", "").strip()
 
     if not text or len(text.strip()) < 50 or pagename.isdigit():
-        return {
-            "probability": 0,
-            "service": None,
-            "reasoning": "Insufficient or empty page content."
-        }
+        return {"probability": 0, "service": None, "reasoning": "Insufficient content"}
 
-    text = text[:3000]  # allow slightly more content for context
+    text = text[:3000]
 
-    # --- Step 2: External research with DuckDuckGo
+    # External research
     research_text = ""
     try:
         query = f"{advertiser_name or pagename} site:.com OR site:.bd OR site:.io OR facebook.com"
         with DDGS() as ddgs:
             results = [r.get("body", "") + " " + r.get("title", "") for r in ddgs.text(query, max_results=5)]
             research_text = "\n".join([r for r in results if len(r) > 50])
-    except Exception:
+    except:
         research_text = ""
-
-    if len(research_text) < 50:
-        research_text = "No strong external data found; analyze only Facebook content."
 
     combined_content = f"Facebook Page Content:\n{text}\n\nExternal Research Data:\n{research_text}"
 
-    # --- Step 3: Smart prompt
+    # Prompt template
     prompt_template = ChatPromptTemplate.from_messages([
-    ("system", """You are an elite B2B sales analyst helping a small digital agency.
+        ("system", """You are an elite B2B sales analyst helping a small digital agency.
 The agency sells:
 1. AI automation / chatbot systems
 2. E-commerce website development and maintenance
@@ -160,26 +143,21 @@ Return STRICT JSON:
   "Reasoning": "<1-2 sentences>"
 }}
 """),
-    ("human", "{content}")
-])
+        ("human", "{content}")
+    ])
 
-    # --- Step 4: Run the model
-    llm = ChatGroq(
-        model="openai/gpt-oss-120b",
-        temperature=0.1,
-    )
-
+    llm = ChatOpenAI(model="phi4-mini-reasoning", temperature=0.1)
     chain = prompt_template | llm | StrOutputParser()
 
     try:
-        response = chain.invoke({"content": combined_content})
+        response = chain.invoke({"content": combined_content})  # <-- Fixed typo
 
-        # --- Step 5: Parse JSON robustly
+        # Parse JSON robustly
         json_str = None
         try:
             json_str = re.search(r'\{.*\}', response, re.DOTALL).group(0)
             data = json.loads(json_str)
-        except Exception:
+        except:
             match = re.search(
                 r'"?Probability"?\s*[:=]\s*(\d+).*?"?Service"?\s*[:=]\s*["\']?([^"\n]+)["\']?.*?"?Reasoning"?\s*[:=]\s*["\']?(.+?)["\']?\s*$',
                 response, re.DOTALL | re.IGNORECASE
@@ -191,7 +169,7 @@ Return STRICT JSON:
                     "Reasoning": match.group(3).strip()
                 }
             else:
-                data = {"Probability": 0, "Service": None, "Reasoning": "Parsing failed."}
+                data = {"Probability": 0, "Service": None, "Reasoning": "Parsing failed"}
 
         probability = int(data.get("Probability", data.get("probability", 0)))
         service = data.get("Service") or data.get("service")
@@ -204,8 +182,5 @@ Return STRICT JSON:
         }
 
     except Exception as e:
-        return {
-            "probability": 0,
-            "service": None,
-            "reasoning": f"Analysis failed: {str(e)}"
-        }
+        return {"probability": 0, "service": None, "reasoning": f"Analysis failed: {str(e)}"}
+
