@@ -244,7 +244,7 @@ def chatDuckAIJson(prompt:str):
 
     run("google-chrome --incognito")
     wait(0.5)
-    write("duck.ai")
+    write("https://duckduckgo.com/?q=DuckDuckGo+AI+Chat&ia=chat&duckai=1")
     press("Enter")
     wait(1)
     wait_until_appears_image("./assets/ocr/duckai_loaded.png")
