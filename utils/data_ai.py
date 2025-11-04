@@ -102,7 +102,7 @@ def save_ads_incremental(new_ads: List[Dict], output_file: str = "extracted_ads.
         return 0
 
 
-def process_large_ad_file(text: str, query: str = "minifan", output_file: str = "ads.json") -> int:
+def process_large_ad_file(text: str, query: str = "minifan", output_file: str = "ads.json") -> dict:
     from langchain_text_splitters import RecursiveCharacterTextSplitter
 
     splitter = RecursiveCharacterTextSplitter(chunk_size=3000, chunk_overlap=500)
@@ -171,7 +171,7 @@ def process_large_ad_file(text: str, query: str = "minifan", output_file: str = 
         json.dump({"ads": all_ads}, f, indent=2, ensure_ascii=False)
 
     print(f"\nDONE: {len(all_ads)} ads → {output_file}")
-    return len(all_ads)
+    return all_ads
 
 def print_summary(output_file: str = "extracted_ads.json"):
     """Print summary of all ads in the file."""
@@ -197,7 +197,7 @@ def print_summary(output_file: str = "extracted_ads.json"):
         print(json.dumps(ads[0], indent=2, ensure_ascii=False)[:500] + "...")
     else:
         print("\nNo ads found in database yet.")
-def process_text_data(text_data: str, query: str, output_file: str = "extracted_ads.json") -> int:
+def process_text_data(text_data: str, query: str, output_file: str = "extracted_ads.json") -> dict:
         """
         Process text data containing Facebook ads and extract information.
         Args:
@@ -216,14 +216,14 @@ def process_text_data(text_data: str, query: str, output_file: str = "extracted_
         print(f"{'='*60}")
         
         # Process the text data
-        new_ads_count = process_large_ad_file(text_data, output_file=output_file, query=query)
+        new_ads = process_large_ad_file(text_data, output_file=output_file, query=query)
         
         print(f"{'='*60}")
         print(f"✓ Processing complete!")
-        print(f"✓ New ads added: {new_ads_count}")
+        print(f"✓ New ads added: {new_ads}")
         
         # Print summary
         print_summary(output_file)
         
-        return new_ads_count
+        return new_ads
 

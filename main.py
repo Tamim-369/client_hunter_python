@@ -5,6 +5,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import time
 from utils import process_text_data, analyze_facebook_lead, proccess_leads
+from humanauto import say
 import html2text
 import re
 import pandas as pd
@@ -50,6 +51,7 @@ try:
     )
 
     print(f"Visiting: {url}")
+    say(f"Visiting: {url}")
     driver.get(url)
 
     # === Wait for ad blocker warning to disappear (if any) ===
@@ -70,6 +72,7 @@ try:
     print("✅ First ad loaded!")
 
     # === Scroll to bottom to load more ===
+    say("Scrolling to bottom to load more ads...")
     print("Scrolling to bottom to load more ads...")
     driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
     time.sleep(4)  # Wait for lazy-loaded ads
@@ -86,22 +89,19 @@ try:
     with open(filename, "w", encoding="utf-8") as f:
         f.write(fullText)
     
-    process_text_data(fullText, query)
-    with open("extracted_ads.json", "r") as data:
-        json_data = json.load(data)
-        selected_fields = ['advertiser', 'advertiser_facebook_link', 'advertiser_website_link', 'contact', 'library_id']
-        
-        # Create DataFrame and rename columns to look better
-        ads_df = pd.DataFrame(json_data['ads'])[selected_fields]
-        ads_df.columns = ['Advertiser', 'Facebook Link', 'Website Link', 'Contact', 'Library ID']
-
-        # Drop duplicates based on Advertiser column, keeping the first occurrence
-        ads_df = ads_df.drop_duplicates(subset=['Advertiser'], keep='first')
-
-        # Save to CSV
-        ads_df.to_csv('extracted_ads.csv', index=False)
-        proccess_leads(json_data['ads'])
-    print("\n\n[+]: Successfully analyzed every facebook page and sorted according to probability and saved in Database\n\n")
+    json_data = process_text_data(fullText, query)
+    selected_fields = ['advertiser', 'advertiser_facebook_link', 'advertiser_website_link', 'contact', 'library_id']
+    
+    # Create DataFrame and rename columns to look better
+    ads_df = pd.DataFrame(json_data)[selected_fields]
+    ads_df.columns = ['Advertiser', 'Facebook Link', 'Website Link', 'Contact', 'Library ID']
+    # Drop duplicates based on Advertiser column, keeping the first occurrence
+    ads_df = ads_df.drop_duplicates(subset=['Advertiser'], keep='first')
+    # Save to CSV
+    ads_df.to_csv('extracted_ads.csv', index=False)
+    proccess_leads(json_data)
+    say("Successfully analyzed every facebook page and sorted according to probability and saved in Database")
+    print("\n\n[+] Successfully analyzed every facebook page and sorted according to probability and saved in Database\n\n")
 finally:
     driver.quit()
     print("Browser closed.")
