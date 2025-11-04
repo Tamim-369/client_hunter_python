@@ -120,34 +120,43 @@ def analyze_facebook_lead(url: str, advertiser_name: str = "") -> dict:
 
     # Prompt template
     prompt_template = ChatPromptTemplate.from_messages([
-        ("system", """You are an elite B2B sales analyst helping a small digital agency.
-The agency sells:
-1. AI automation / chatbot systems
-2. E-commerce website development and maintenance
-3. Security audits for websites and apps
-4. Securing and maintaining existing online stores
+    ("system", """You are an elite B2B sales analyst helping a small digital agency based in Bangladesh.  
+The agency offers only these four services:  
+1. AI automation / chatbot systems  
+2. E-commerce website development and maintenance  
+3. Security audits for websites and apps  
+4. Securing and maintaining existing online stores  
 
-The agency owner only wants leads who will likely REPLY to his DM/email — not massive corporations or inactive shops.
-If the page seems too large (corporate, celebrity, verified, 100K+ followers), reduce probability.
-If it seems too small (no contact info, personal account, <100 followers), reduce probability.
-If it's a local business, active, and professionally branded, increase probability.
+Your job is to evaluate a business's Facebook page (and any available external data) and predict whether the owner is a high-potential lead—meaning they are likely to reply to a direct message or email and purchase a service soon.  
 
-Your task:
-Analyze both the Facebook page and any external data to predict:
-- Probability (0–100) of this lead replying and buying one of the services soon
-- The exact service that fits best
-- A short, realistic reasoning (1-2 sentences max)
+**Lead Quality Guidelines:**  
+- ⬇️ **Reduce probability** if:  
+  - The page belongs to a large corporation, celebrity, or verified account with 100K+ followers  
+  - The page appears inactive, personal, or has <100 followers  
+  - No contact info, website, or business details are visible  
+- ⬆️ **Increase probability** if:  
+  - It’s a local, active, professionally branded small or medium business  
+  - Clear signs of digital presence (e.g., online store, contact form, recent posts)  
 
-Explain and Return JSON with this Exact Structure:
-{{
-  "Probability": <number between 0-100>,
-  "Service": "<exact service name>",
-  "Reasoning": "<1-2 sentences>"
-}}
-"""),
-        ("human", "{content}")
-    ])
+**Output Rules (STRICT):**  
+- ALWAYS respond with a brief natural-language explanation **first**, then provide the JSON **strictly as a code block** using triple backticks (```json ... ```)  
+- NEVER output JSON as plain text—it must be wrapped in a code block  
+- The JSON must contain exactly these three keys: "Probability", "Service", and "Reasoning"  
+- "Probability" must be an integer from 0 to 100  
+- "Service" must be one of the four exact service names listed above  
+- "Reasoning" must be 1–2 concise, realistic sentences  
 
+Example of correct output:  
+This business runs an active online clothing store with recent posts but lacks proper security headers. They’re likely to invest in maintenance and protection.  
+```json
+{
+  "Probability": 78,
+  "Service": "Securing and maintaining existing online stores",
+  "Reasoning": "Active e-commerce store with visible contact info and recent updates, but shows signs of outdated security practices."
+}
+```"""),
+    ("human", "{content}")
+])
     
     try:
         response = chatDuckAIJson(prompt_template)

@@ -111,44 +111,49 @@ def process_large_ad_file(text: str, query: str = "minifan", output_file: str = 
     all_ads = []
     for i, chunk in enumerate(chunks):
         print(f"\nChunk {i+1}/{len(chunks)}")
-
         prompt = f"""
-You are a data extraction AI specialized in parsing Facebook Ad Library data. 
-Your task: extract EVERY valid Facebook ad from the provided text chunk.
+    You are a data extraction AI specialized in parsing Facebook Ad Library data. 
 
-### Rules (strictly enforced):
-1. Only include ads that:
-   - Contain a valid advertiser Facebook page link.
-   - Are relevant to this query: "{query}".
-2. If no valid, complete ads exist, return exactly: {{"ads": []}}
-3. Never add, infer, or guess missing data. If a field is missing, use null.
-4. The response MUST contain valid JSON (parseable, no trailing commas) and you also have to give a simple 5 line text explaination
+    Your task is to:
+    1. Analyze the provided text chunk
+    2. Extract EVERY valid Facebook ad
+    3. Provide a brief analysis (max 5 lines)
+    4. Return the data in JSON format ONLY inside a code block
 
-### Required json schema:
-{{
-    "ads": [
+    ### STRICT RULES:
+    1. Only include ads that:
+       - Have a valid advertiser Facebook page link
+       - Are relevant to: "{query}"
+    2. ALL responses must be in markdown format
+    3. JSON must ALWAYS be inside ```json code blocks
+    4. Return {{"ads": []}} if no valid ads found
+    5. Never guess or infer missing data - use null instead
+
+    ### Required JSON Structure (return inside ```json block):
+    {{
+        "ads": [
         {{
             "advertiser": "Advertiser name",
             "advertiser_facebook_link": "https://facebook.com/...",
             "advertiser_website_link": "https://... or null",
-            "library_id": "Library ID",
+            "library_id": "Library ID", 
             "start_date": "YYYY-MM-DD",
-            "active_time": "duration text (e.g., 'Active since 10 days')",
-            "content_preview": "first 200 characters of ad text",
-            "contact": "email or phone or null",
+            "active_time": "duration text",
+            "content_preview": "first 200 chars of ad text",
+            "contact": "email/phone or null",
             "delivery_cost_inside": "price info or null",
             "delivery_cost_outside": "price info or null"
         }}
-    ]
-}}
+        ]
+    }}
 
-### Extraction Notes:
-- “content_preview” = first 200 visible characters of the ad’s content.
-- Trim all whitespace and line breaks from extracted values.
+    ### Input Text to Process:
+    {chunk}
 
-### Input Text:
-{chunk}
-"""
+    Remember: Your response MUST contain:
+    1. A brief analysis (max 5 lines)
+    2. JSON data ONLY inside a ```json code block
+    """
 
         result = chatDuckAIJson(prompt)
         ads = result.get("ads", [])
