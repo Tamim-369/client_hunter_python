@@ -51,7 +51,7 @@ try:
     )
 
     print(f"Visiting: {url}")
-    say(f"Visiting: {url}")
+    say(f"Visiting...")
     driver.get(url)
 
     # === Wait for ad blocker warning to disappear (if any) ===

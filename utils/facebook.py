@@ -119,7 +119,7 @@ def analyze_facebook_lead(url: str, advertiser_name: str = "") -> dict:
     combined_content = f"Facebook Page Content:\n{text}\n\nExternal Research Data:\n{research_text}"
 
     # Prompt template
-    prompt = f"""You are an elite B2B sales analyst helping a small digital agency based in Bangladesh.  
+    prompt = """You are an elite B2B sales analyst helping a small digital agency based in Bangladesh.  
 The agency offers only these four services:  
 1. AI automation / chatbot systems  
 2. E-commerce website development and maintenance  
