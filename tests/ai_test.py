@@ -237,6 +237,7 @@ Your task: extract EVERY valid Facebook ad from the provided text chunk.
 ### Input Text:
 {garbege}
 """
+
 def chatDuckAIJson(prompt:str):
     press("Win","9")
     wait(0.5)
@@ -264,9 +265,13 @@ def chatDuckAIJson(prompt:str):
     wait(0.5)
     pyautogui.moveTo(960,540)
     wait(0.5)
-    scroll_until_appears_image("./assets/ocr/duckai_copy_code.png")
+    press("Ctrl", "f")
     wait(0.5)
-    click_on_image("./assets/ocr/duckai_copy_code.png")
+    write("copy code")
+    wait(0.5)
+    wait_until_appears_image("./assets/ocr/duckai_copy_code2.png")
+    wait(0.5)
+    click_on_image("./assets/ocr/duckai_copy_code2.png")
     wait(2)
     copied_text = get_copied_value()
     print(copied_text)

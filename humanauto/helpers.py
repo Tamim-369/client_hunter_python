@@ -9,6 +9,8 @@ import psutil, time
 from humanauto import *
 from typing import Any, Dict, List, Optional
 
+import pyperclip
+
 def get_text_boxes(screenshot, min_conf=50):
     """
     Extract all text boxes with confidence >= min_conf (0-100).
@@ -286,3 +288,44 @@ def scroll_until_appears_image(image_path, timeout=30, confidence=0.8, interval=
         # Scroll down and wait a bit
         pyautogui.scroll(scroll_amount)
         time.sleep(interval)
+
+def chatDuckAIJson(prompt:str):
+    press("Win","9")
+    wait(0.5)
+
+    run("google-chrome --incognito")
+    wait(0.5)
+    write("duck.ai")
+    press("Enter")
+    wait(1)
+    wait_until_appears_image("./assets/ocr/duckai_loaded.png")
+    wait(0.5)
+    click_on_image("./assets/ocr/duckai_agree.png")
+    wait(0.5)
+    click_on_image("./assets/ocr/duckai_chat.png")
+    wait(0.5)
+    copy_var_and_paste(prompt)
+    wait(1)
+    press("Enter")
+    wait(0.5)
+    press("Enter")
+    wait(0.5)
+    wait_until_appears_image("./assets/ocr/duckai_chat2.png")
+    wait(0.5)
+    click_on_image("./assets/ocr/duckai_random.png")
+    wait(0.5)
+    pyautogui.moveTo(960,540)
+    wait(0.5)
+    press("Ctrl", "f")
+    wait(0.5)
+    write("copy code")
+    wait(0.5)
+    wait_until_appears_image("./assets/ocr/duckai_copy_code2.png")
+    wait(0.5)
+    click_on_image("./assets/ocr/duckai_copy_code2.png")
+    wait(2)
+    copied_text = get_copied_value()
+    print(copied_text)
+    press("Alt", "F4")
+    data = json.loads(copied_text)
+    return data

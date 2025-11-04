@@ -1,6 +1,8 @@
-from langchain_ollama import ChatOllama
+
 from langchain_classic.text_splitter import RecursiveCharacterTextSplitter
 from langchain_classic.schema import HumanMessage
+from humanauto import chatDuckAIJson
+import time
 from typing import List, Dict
 import json
 import re
@@ -99,94 +101,46 @@ def save_ads_incremental(new_ads: List[Dict], output_file: str = "extracted_ads.
         print(f"  - No new ads to add (all were duplicates)")
         return 0
 
-def process_large_ad_file(text: str, chunk_size: int = 3000, output_file: str = "extracted_ads.json", query: str = "minifan") -> int:
-    """
-    Process large Facebook Ad Library file containing multiple ads.
-    Saves new ads incrementally to avoid data loss.
-    Returns total number of new ads found.
-    """
-    # Split text into chunks
-    text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=chunk_size,
-        chunk_overlap=500,  # Higher overlap to avoid splitting ads
-        length_function=len,
-        separators=["\n\n* * *\n\n", "Library ID:", "\n\n\n", "\n\n", "\n", " "]
-    )
-    
-    chunks = text_splitter.split_text(text)
-    
-    llm = ChatOllama(
-        model="phi4-mini-reasoning",
-        temperature=0.1,
-    )
-    
-    total_new_ads = 0
-    not_found_count = 0
+
+def process_large_ad_file(text: str, query: str = "minifan", output_file: str = "ads.json") -> int:
+    from langchain_text_splitters import RecursiveCharacterTextSplitter
+
+    splitter = RecursiveCharacterTextSplitter(chunk_size=3000, chunk_overlap=500)
+    chunks = splitter.split_text(text)
+
+    all_ads = []
     for i, chunk in enumerate(chunks):
-        print(f"Processing chunk {i+1}/{len(chunks)}...")
-        
+        print(f"\nChunk {i+1}/{len(chunks)}")
+
         prompt = f"""
-You are a data extraction AI specialized in parsing Facebook Ad Library data. 
-Your task: extract EVERY valid Facebook ad from the provided text chunk.
+You are a Facebook Ad extractor. Return ONLY JSON.
 
-### Rules (strictly enforced):
-1. Only include ads that:
-   - Contain a valid advertiser Facebook page link.
-   - Are relevant to this query: "{query}".
-2. If no valid, complete ads exist, return exactly: {{"ads": []}} — no text or commentary.
-3. Never add, infer, or guess missing data. If a field is missing, use null.
-4. The response MUST be valid JSON (parseable, no trailing commas).
-
-### Required output schema:
+Schema:
 {{
-    "ads": [
-        {{
-            "advertiser": "Advertiser name",
-            "advertiser_facebook_link": "https://facebook.com/...",
-            "advertiser_website_link": "https://... or null",
-            "library_id": "Library ID",
-            "start_date": "YYYY-MM-DD",
-            "active_time": "duration text (e.g., 'Active since 10 days')",
-            "content_preview": "first 200 characters of ad text",
-            "contact": "email or phone or null",
-            "delivery_cost_inside": "price info or null",
-            "delivery_cost_outside": "price info or null"
-        }}
-    ]
+  "ads": [ {{ "advertiser": "", "advertiser_facebook_link": "", "library_id": "" }} ]
 }}
 
-### Extraction Notes:
-- “content_preview” = first 200 visible characters of the ad’s content.
-- Trim all whitespace and line breaks from extracted values.
-
-### Input Text:
+Extract ads relevant to "{query}" from:
 {chunk}
 """
 
-        try:
-            response = llm.invoke([HumanMessage(content=prompt)])
-            
-            # Extract JSON from response (handles extra text)
-            result = extract_json_from_response(response.content)
-            
-            if "ads" in result and result["ads"]:
-                print(f"  ✓ Found {len(result['ads'])} ads in this chunk")
-                
-                # Save incrementally
-                new_count = save_ads_incremental(result["ads"], output_file)
-                total_new_ads += new_count
-            else:
-                print(f"  - No ads found in this chunk")
-                # not_found_count+=1
-                # if not_found_count > 20:
-                #     return total_new_ads
+        result = chatDuckAIJson(prompt)
+        ads = result.get("ads", [])
+        
+        if ads:
+            print(f"  Found {len(ads)} ads")
+            all_ads.extend(ads)
+        else:
+            print("  No ads")
 
-            
-        except Exception as e:
-            print(f"  ✗ Error processing chunk {i+1}: {e}")
-            continue
-    
-    return total_new_ads
+        time.sleep(3)  # Be gentle with Duck.ai
+
+    # Save
+    with open(output_file, "w", encoding="utf-8") as f:
+        json.dump({"ads": all_ads}, f, indent=2, ensure_ascii=False)
+
+    print(f"\nDONE: {len(all_ads)} ads → {output_file}")
+    return len(all_ads)
 
 def print_summary(output_file: str = "extracted_ads.json"):
     """Print summary of all ads in the file."""
@@ -231,7 +185,7 @@ def process_text_data(text_data: str, query: str, output_file: str = "extracted_
         print(f"{'='*60}")
         
         # Process the text data
-        new_ads_count = process_large_ad_file(text_data, chunk_size=3000, output_file=output_file, query=query)
+        new_ads_count = process_large_ad_file(text_data, output_file=output_file, query=query)
         
         print(f"{'='*60}")
         print(f"✓ Processing complete!")
