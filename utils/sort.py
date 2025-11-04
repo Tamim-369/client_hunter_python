@@ -180,26 +180,26 @@ def generate_pitch_and_link(row: dict) -> tuple:
     orders = row["Est. Daily Orders"]
     revenue = row["Est. Monthly Revenue"]
     contact = str(row["Contact"] or "").strip()
-    website = row.get("Website Link", "")
 
-    # SMART DEFAULTS
+    # Smart defaults
     if orders == "Unknown":
         orders_text = "৫–১৫ অর্ডার/দিন"
         revenue_text = "১–৩ লাখ/মাস"
     else:
         orders_text = orders
-        revenue_text = revenue.replace("< ৳150K", "১.৫ লাখের নিচে")
+        revenue_text = revenue.replace("৳", "").replace("< 150K", "১.৫ লাখের নিচে").strip()
 
     # Clean phone
     phone = re.sub(r'\D', '', contact)
-    if phone.startswith('880'): phone = phone[3:]
-    if phone.startswith('0'): phone = '880' + phone[1:]
-    if not phone.startswith('880') or len(phone) != 13:
+    if phone.startswith('880') and len(phone) == 13:
+        pass
+    elif phone.startswith('0') and len(phone) == 11:
+        phone = '880' + phone[1:]
+    else:
         phone = ""
 
     pitch = f"সালামু আলাইকুম, {name}!\n\n"
 
-    # Dynamic Issues
     if "load time" in issues.lower():
         load = [s for s in issues.split() if s.replace('.', '').isdigit()]
         if load:
@@ -208,7 +208,7 @@ def generate_pitch_and_link(row: dict) -> tuple:
         pitch += "সাইট 'Not Secure' দেখাচ্ছে → কাস্টমার ভরসা হারাচ্ছে\n"
     if "missing headers" in issues.lower():
         pitch += "হ্যাকাররা আপনার সাইটে ঢুকতে পারে — সিকিউরিটি হোল আছে\n"
-    if "FB-only" in issues or not website or website == "FB Only":
+    if "FB-only" in issues.lower() or "FB Only" in row.get("Website Link", ""):
         pitch += "আপনি FB-এ বিক্রি করছেন — কিন্তু অর্ডার ম্যানুয়াল? AI দিয়ে অটো করুন!\n"
 
     pitch += f"\nআপনার দোকানে ~{orders_text} ({revenue_text}) — আমরা ৭ দিনে:\n"
@@ -218,97 +218,150 @@ def generate_pitch_and_link(row: dict) -> tuple:
     pitch += "প্রথম অডিট ফ্রি। ১৫ মিনিট কল? [Your Calendly]"
 
     wa_link = f"https://wa.me/{phone}?text={urllib.parse.quote(pitch)}" if phone else ""
-
     return pitch.strip(), wa_link
 
+
+def infer_service_from_name(name: str) -> str:
+    name_lower = name.lower()
+    service_map = {
+        "grocery": "Grocery",
+        "fashion": "Fashion",
+        "clothing": "Fashion",
+        "wear": "Fashion",
+        "boot": "Footwear",
+        "shoe": "Footwear",
+        "watch": "Accessories",
+        "book": "Books",
+        "cafe": "F&B",
+        "restaurant": "F&B",
+        "cosmetic": "Beauty",
+        "electronics": "Electronics",
+        "gadget": "Electronics",
+        "ceramic": "Home Decor",
+        "furniture": "Home Decor",
+    }
+    for keyword, service in service_map.items():
+        if keyword in name_lower:
+            return service
+    return "E-commerce"
 
 def proccess_leads(ads_array: list):
     db = LeadDB()
     results = []
+    seen_keys = set()
 
     print("Starting FB Lead Analysis → MongoDB Atlas")
 
     for ad in ads_array:
-        print(f"→ Analyzing: {ad.get('advertiser', 'Unknown')}")
+        advertiser = ad.get('advertiser', 'Unknown').strip()
+        print(f"→ Analyzing: {advertiser}")
 
         # === EXTRACT & CLEAN ===
         fb_link = str(ad.get('advertiser_facebook_link') or "").strip()
+        if not fb_link or "facebook.com" not in fb_link:
+            print(f"  [SKIP] Invalid FB link: {fb_link}")
+            continue
+
+        # Extract pagename
+        try:
+            pagename = fb_link.split("facebook.com/")[1].split("?")[0].split("#")[0].rstrip("/")
+            if pagename.isdigit():
+                continue
+        except:
+            continue
+
+        # === WEBSITE ===
+        website_raw = ad.get('advertiser_website_link', '')
         website = ""
-        website_raw = ad.get('advertiser_website_link')
-        if website_raw and isinstance(website_raw, str):
+        if isinstance(website_raw, str):
             website = website_raw.strip()
-            if website.lower() in ["none", "null", ""] or not website:
+            if website.lower() in ["", "none", "null", "fb only"]:
                 website = ""
             elif not website.startswith(("http://", "https://")):
                 website = "https://" + website
 
-        # === PAGENAME ===
-        pagename = ""
-        if fb_link and "facebook.com" in fb_link:
-            try:
-                pagename = fb_link.split("facebook.com/")[1].split("?")[0].split("#")[0].rstrip("/")
-            except:
-                pass
-        if not pagename or pagename.isdigit():
+        # === LIBRARY ID ===
+        library_id = str(ad.get('library_id') or f"fb_{int(time.time())}_{hash(fb_link) % 10000}")
+
+        # === DUPLICATE CHECK ===
+        dedupe_key = (fb_link, library_id)
+        if dedupe_key in seen_keys:
+            print(f"  [DUPLICATE] Skipped: {advertiser}")
             continue
+        seen_keys.add(dedupe_key)
 
         # === FB ANALYSIS ===
-        lead_result = analyze_facebook_lead(fb_link, ad.get("advertiser", "unknown"))
+        lead_result = analyze_facebook_lead(fb_link, advertiser)
         time.sleep(2)
 
-        # === WEBSITE SCAN ===
+        # === SERVICE (NEVER NULL) ===
+        service_raw = lead_result.get('service', '') or ''
+        service = str(service_raw).strip().title()
+        if not service or service.lower() in ["unknown", "none", ""]:
+            service = infer_service_from_name(advertiser) or "E-commerce"
+
+        # === WEBSITE ISSUES ===
         issues = ""
-        service = str(lead_result.get('service', '') or "").lower()
-        if any(x in service for x in ["security", "maintaining", "audit"]):
+        if any(x in service.lower() for x in ["security", "maintenance", "audit", "ssl"]):
             if website:
                 issues = analyze_website_issues(website)
                 time.sleep(1)
             else:
                 issues = "FB-only store — perfect for AI Chatbot + Auto-Order System"
+        else:
+            issues = "Service-based — website optional"
 
         # === METRICS ===
         metrics = estimate_conversion_metrics(ad, issues)
 
-        # === BUILD LEAD ===
+        # === BUILD LEAD (GUARANTEED VALID) ===
         lead = {
-            "advertiser": ad.get('advertiser', 'Unknown'),
+            "advertiser": advertiser,
             "facebook_link": fb_link,
             "website_link": website or "FB Only",
             "contact": str(ad.get('contact') or "").strip(),
-            "library_id": ad.get('library_id', '') or f"temp_{int(time.time())}",
-            "probability": lead_result.get('probability', 0),
-            "service": lead_result.get('service', ''),
+            "library_id": library_id,
+            "probability": max(0, int(lead_result.get('probability', 0))),
+            "service": service,  # ← NEVER NULL, NEVER None
             "reasoning": str(lead_result.get('reasoning', '')).strip(),
             "issues": issues,
-            **metrics,
             "status": "new",
-            "tags": ["fb-ad"]
+            "tags": lead_result.get('tags', ['fb-ad']),
+            **metrics
         }
 
-        # === PITCH ===
+        # === PITCH & WHATSAPP ===
         pitch_row = LeadModel.default_pitch_row(lead)
         pitch, wa_link = generate_pitch_and_link(pitch_row)
         lead["pitch"] = pitch
-        lead["whatsapp_link"] = wa_link
+        lead["whatsapp_link"] = wa_link or ""
+
+        # === FINAL VALIDATION ===
+        if not lead["service"]:
+            lead["service"] = "E-commerce"
 
         results.append(lead)
-
+    print(results)
     # === SAVE TO MONGODB ===
-    summary = db.bulk_upsert(results)
-    print(f"MongoDB: {summary['saved']} saved, {summary['updated']} updated")
-
-    # === EXPORT CSV (backup) ===
     if results:
-        df = pd.DataFrame(results)
-        df.to_csv("backup_leads.csv", index=False, encoding="utf-8")
-        print("Backup saved: backup_leads.csv")
+        summary = db.bulk_upsert(results)
+        print(f"MongoDB: {summary['saved']} saved, {summary['updated']} updated")
+    else:
+        print("No valid leads to save.")
+        return []
+
+  
 
     # === TOP 5 LEADS ===
     top_leads = db.get_high_priority(min_prob=65, limit=5)
     if top_leads:
-        print("\nTOP 5 LEADS — OPEN WHATSAPP:")
+        print("\nTOP 5 HIGH-PROBABILITY LEADS — OPEN WHATSAPP:")
         for lead in top_leads:
-            print(lead["whatsapp_link"])
+            wa = lead.get("whatsapp_link", "")
+            if wa:
+                print(f"  {lead['advertiser']} → {wa}")
+            else:
+                print(f"  {lead['advertiser']} → [No WhatsApp]")
 
     return results
 

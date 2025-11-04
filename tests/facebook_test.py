@@ -136,34 +136,137 @@ import pandas as pd
 # print("Successfully analyzed every facebook page and sorted according to probability and saved in csv")
 
 pages_to_test = [
-    # 🧠 Low-probability
-    {"url": "https://www.facebook.com/amardinlipi1/", "name": "আমার দিনলিপি"},
-    {"url": "https://www.facebook.com/meme.lovers.bd", "name": "Meme Lovers BD"},
-    {"url": "https://www.facebook.com/cute.cat.pictures.bd", "name": "Cute Cat Pictures BD"},
-
-    # 💼 Medium-probability
-    {"url": "https://www.facebook.com/freelancertanvir", "name": "Freelancer Tanvir"},
-    {"url": "https://www.facebook.com/graphicpointbd", "name": "Graphic Point BD"},
-    {"url": "https://www.facebook.com/bdbrandshop", "name": "BD Brand Shop"},
-
-    # 🏢 High-probability
-    {"url": "https://www.facebook.com/darazbd", "name": "Daraz Bangladesh"},
-    {"url": "https://www.facebook.com/shajgoj", "name": "Shajgoj"},
-    {"url": "https://www.facebook.com/othoba.com.bd", "name": "Othoba.com"},
-
-    # 🔒 Tech/Security
-    {"url": "https://www.facebook.com/pathao", "name": "Pathao"},
-    {"url": "https://www.facebook.com/foodpandaBangladesh", "name": "Foodpanda Bangladesh"},
-]
+    {
+      "advertiser": "Dhaka Online Grocery Store",
+      "advertiser_facebook_link": "https://www.facebook.com/dhakawholesalepricebd/",
+      "advertiser_website_link": None,
+      "library_id": "1869881600293572",
+      "start_date": "2025-11-04",
+      "active_time": "3 hrs",
+      "content_preview": "🔥🔥 Offer Offer 🔥🔥  Buy one get one free  #follwers #everyonehighlightsfollowerseveryonehighlightsfollowerseveryone",
+      "contact": None,
+      "delivery_cost_inside": None,
+      "delivery_cost_outside": None
+    },
+    {
+      "advertiser": "The Reading Cafe",
+      "advertiser_facebook_link": "https://www.facebook.com/readingcafe.bookstore/",
+      "advertiser_website_link": None,
+      "library_id": "1907843143416638",
+      "start_date": "2025-11-04",
+      "active_time": "7 hrs",
+      "content_preview": "Remember: Your response MUST contain: 1. A brief analysis (max 5 lines) 2. JSON data ONLY inside a ```json code block",
+      "contact": None,
+      "delivery_cost_inside": None,
+      "delivery_cost_outside": None
+    },
+    {
+      "advertiser": "The Reading Cafe",
+      "advertiser_facebook_link": "https://www.facebook.com/readingcafe.bookstore/",
+      "advertiser_website_link": "http://www.thereadingcafebd.com/",
+      "library_id": "1907843143416638",
+      "start_date": "2025-11-04",
+      "active_time": "7 hrs",
+      "content_preview": "📚 𝗛𝗔𝗟𝗙 𝗣𝗥𝗜𝗖𝗘 𝗕𝗢𝗢𝗞 𝗦𝗔𝗟𝗘! 📚 𝑭𝑳𝑨𝑻 50% 𝑫𝑰𝑺𝑪𝑶𝑼𝑵𝑻 𝑶𝑵 𝑨𝑳𝑳 𝑶𝑹𝑰𝑮𝑰𝑵𝑨𝑳 & 𝑰𝑴𝑝𝑶𝑹𝑻𝑬𝑫 𝑩𝑶𝑶𝑲𝑺! 🎉 Dive into your next great read with our massive Half Price Sale — featuring 𝑭𝒊𝒄𝒕𝒊𝒐𝒏, 𝑵𝒐𝒏-𝑭𝒊𝒄𝒕𝒊𝒐𝒏, 𝑪𝒉𝒊𝒍𝒅𝒓𝒆𝒏’𝒔 𝑩𝒐𝒐𝒌𝒔...",
+      "contact": "+880-1738-963-670",
+      "delivery_cost_inside": "None",
+      "delivery_cost_outside": "None"
+    },
+    {
+      "advertiser": "The Reading Cafe",
+      "advertiser_facebook_link": "https://www.facebook.com/readingcafe.bookstore/",
+      "advertiser_website_link": "http://www.thereadingcafebd.com",
+      "library_id": "1328297535102482",
+      "start_date": "2025-11-04",
+      "active_time": "7 hrs",
+      "content_preview": "📚 𝗛𝗔𝗟𝗙 𝗣𝗥𝗜𝗖𝗘 𝗕𝗢𝗢𝗚𝗔 ✅ Dive into your next great read with our massive Half Price Sale — featuring 𝑭𝒊𝒄𝒕𝒊𝒐𝒏, 𝑵𝒐𝒏-𝑭𝒊𝒄𝒕𝒊𝒐𝒏, 𝑪𝒉𝒊𝒍𝒅𝒓𝒆𝒏’𝒔 𝑩𝒐𝒐𝒌𝒔, 𝑩𝒐𝒙 𝑺𝒆𝒕𝒔...",
+      "contact": "+880-1738-963-670",
+      "delivery_cost_inside": "2% charge for card/bKash payments",
+      "delivery_cost_outside": "advance required"
+    },
+    {
+      "advertiser": "And Or",
+      "advertiser_facebook_link": "https://www.facebook.com/andor.readingcafe/",
+      "advertiser_website_link": "http://www.thereadingcafebd.com/",
+      "library_id": "24978811731813725",
+      "start_date": "2025-11-04",
+      "active_time": "7 hrs",
+      "content_preview": "📚 𝗛𝗔𝗟𝗙 𝗣𝗥𝗜𝗖𝗘 𝗕𝗢𝗢𝗚 𝗦𝗔𝗟𝗘! 📚 𝑭𝑳𝑨𝑻 50% 𝑫𝑰𝑺𝑪𝑶𝑼𝑵𝑻 𝑶𝑵 𝑨𝑳𝑳 𝑶𝑹𝑰𝑮𝑰𝑵𝑨𝑳 & 𝑰𝑴𝑷𝑶𝑹𝑻𝑬𝑫 𝑩𝑶𝑶𝑲𝑺! 🎉 Dive into your next great read with our massive Half Price Sale — featuring... ",
+      "contact": "+880-1738-963-670",
+      "delivery_cost_inside": "Home Delivery Available All Over Bangladesh",
+      "delivery_cost_outside": None
+    },
+    {
+      "advertiser": "Time Machine BD",
+      "advertiser_facebook_link": "https://www.facebook.com/timemachinetmbd/",
+      "advertiser_website_link": None,
+      "library_id": "2127259851350392",
+      "start_date": "2025-11-04",
+      "active_time": "9 hrs",
+      "content_preview": "In-store: Up to 20% off exclusive deals. Online: Flat 10% off every order. Pre-order limited pieces before they’re gone...",
+      "contact": None,
+      "delivery_cost_inside": "COD Across Bangladesh",
+      "delivery_cost_outside": None
+    },
+  
+    {
+      "advertiser": "Emptique",
+      "advertiser_facebook_link": "https://www.facebook.com/emptique/",
+      "advertiser_website_link": None,
+      "library_id": "798603479612122",
+      "start_date": "2025-11-02",
+      "active_time": "Active",
+      "content_preview": "𝐁𝐮𝐢𝐥𝐝 𝐭𝐫𝐮𝐬𝐭 𝐭𝐡𝐞 𝐬𝐢𝐦𝐩𝐥𝐞 𝐰𝐚𝐲 — 𝐥𝐞𝐭 𝐃𝐡𝐚𝐤𝐚’𝐬 𝐛𝐞𝐬𝐭 𝐫𝐞𝐬𝐭𝐚𝐮𝐫𝐚𝐧𝐭𝐬 𝐡𝐨𝐬𝐭 𝐲𝐨𝐮. Step inside Dhaka’s most elegant restaurants with 𝐄𝐦𝐩𝐭𝐢𝐪𝐮𝐞 — Bangladesh’s first platform...",
+      "contact": "01814-231316",
+      "delivery_cost_inside": None,
+      "delivery_cost_outside": None
+    },
+    {
+      "advertiser": "Tori : তরী",
+      "advertiser_facebook_link": "https://www.facebook.com/toriclothing/",
+      "advertiser_website_link": None,
+      "library_id": "845133538461631",
+      "start_date": "2025-11-02",
+      "active_time": "Active",
+      "content_preview": "🪡Premium Cotton 𝗞𝗔𝗘𝗜𝗔! 𝗘𝗜𝗗/𝟮𝟱\nSoft as a hug! Lightweight, breathable & all-day comfy. Crafted for comfort lovers! Grab yours & create magic! 𝗦𝘁𝗼𝗰𝗸 𝗹𝗶𝗺𝗶𝘁𝗲𝗱!",
+      "contact": None,
+      "delivery_cost_inside": None,
+      "delivery_cost_outside": None
+    },
+    {
+      "advertiser": "India Shopping BD",
+      "advertiser_facebook_link": "https://www.facebook.com/IndiaShoppingBD/",
+      "advertiser_website_link": None,
+      "library_id": "1357083399453057",
+      "start_date": "2025-10-31",
+      "active_time": "Active",
+      "content_preview": "Shop for you and your loved ones availing great deals. We are taking pre-orders from Malaysia and India. 🇧🇩🇲🇾🇮🇳 Delivery time is 10-20 days...",
+      "contact": None,
+      "delivery_cost_inside": None,
+      "delivery_cost_outside": None
+    },
+    {
+      "advertiser": "Printacy",
+      "advertiser_facebook_link": "https://www.facebook.com/printacy/",
+      "advertiser_website_link": None,
+      "library_id": "790084117343465",
+      "start_date": "2025-11-01",
+      "active_time": "Active",
+      "content_preview": "Premium Shopping Bags – যেখানে স্টাইল মিশে আছে ব্র্যান্ড আইডেন্টিটির সাথে! প্রতিটি ব্যাগ শুধু একটি প্যাকেজ নয় — এটা আপনার ব্র্যান্ডের চলমান বিজ্ঞাপন!",
+      "contact": "01823549035",
+      "delivery_cost_inside": None,
+      "delivery_cost_outside": None
+    }
+  ]
 
 results = []
 
 print("[+] Starting batch Facebook lead analysis...\n")
 
 for i, page in enumerate(pages_to_test, start=1):
-    print(f"[{i}/{len(pages_to_test)}] Analyzing: {page['name']} -> {page['url']}")
+    print(f"[{i}/{len(pages_to_test)}] Analyzing: {page['advertiser']} -> {page['advertiser_facebook_link']}")
     try:
-        data = analyze_facebook_lead(page["url"], page["name"])
+        data = analyze_facebook_lead(page["advertiser_facebook_link"], page["advertiser"])
     except Exception as e:
         data = {"probability": 0, "service": None, "reasoning": f"Error: {str(e)}"}
     
