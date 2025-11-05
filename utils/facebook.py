@@ -97,7 +97,7 @@ def getPageData(page_url:str):
 
 
 
-def analyze_facebook_lead(url: str, advertiser_name: str = "") -> dict:
+def analyze_facebook_lead(url: str, advertiser_name: str = "") -> any:
     text = getPageData(url)
     pagename = url.split("com/")[1].replace("/", "").strip()
 

@@ -333,4 +333,4 @@ def chatDuckAIJson(prompt:str):
         print(copied_text)
         press("Alt", "F4")
         data = json.loads(copied_text)
-    return data
+        return data

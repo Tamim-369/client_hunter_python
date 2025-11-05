@@ -30,7 +30,8 @@ def run(*args):
     os.system(*args)
 # say something
 def say(text:str="No text in the argument"):
-    os.system(f"espeak '{text}'")
+    pass
+    # os.system(f"espeak '{text}'")
 # get the texts which were copied
 def get_copied_value():
     return pyperclip.paste()
