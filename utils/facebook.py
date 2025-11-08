@@ -159,27 +159,7 @@ This business runs an active online clothing store with recent posts but lacks p
 ```"""
     
     try:
-        response = chatDuckAIJson(prompt)
-
-        # Parse JSON robustly
-        json_str = None
-        try:
-            json_str = re.search(r'\{.*\}', response, re.DOTALL).group(0)
-            data = json.loads(json_str)
-        except:
-            match = re.search(
-                r'"?Probability"?\s*[:=]\s*(\d+).*?"?Service"?\s*[:=]\s*["\']?([^"\n]+)["\']?.*?"?Reasoning"?\s*[:=]\s*["\']?(.+?)["\']?\s*$',
-                response, re.DOTALL | re.IGNORECASE
-            )
-            if match:
-                data = {
-                    "Probability": int(match.group(1)),
-                    "Service": match.group(2).strip(),
-                    "Reasoning": match.group(3).strip()
-                }
-            else:
-                data = {"Probability": 0, "Service": None, "Reasoning": "Parsing failed"}
-
+        data = chatDuckAIJson(prompt)
         probability = int(data.get("Probability", data.get("probability", 0)))
         service = data.get("Service") or data.get("service")
         reasoning = data.get("Reasoning") or data.get("reasoning")

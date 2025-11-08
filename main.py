@@ -74,8 +74,8 @@ try:
     # === Scroll to bottom to load more ===
     say("Scrolling to bottom to load more ads...")
     print("Scrolling to bottom to load more ads...")
-    driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-    time.sleep(4)  # Wait for lazy-loaded ads
+    # driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+    # time.sleep(4)  # Wait for lazy-loaded ads
 
     # Optional: scroll multiple times if needed
     # for _ in range(3):
